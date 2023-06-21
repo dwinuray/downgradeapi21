@@ -1,0 +1,222 @@
+package com.example.downgradeapi21;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import android.Manifest;
+import android.content.DialogInterface;
+import android.content.pm.PackageManager;
+import android.os.Bundle;
+import android.util.Log;
+import android.webkit.GeolocationPermissions;
+import android.webkit.PermissionRequest;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.Toast;
+
+public class MainActivity extends AppCompatActivity {
+
+    WebView mWebView;
+
+    public class GeoWebViewClient extends WebViewClient {
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            // When user clicks a hyperlink, load in the existing WebView
+            view.loadUrl(url);
+            return true;
+        }
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+
+        // hide header title bar
+        try
+        {
+            this.getSupportActionBar().hide();
+        }
+        catch (NullPointerException e){}
+
+        mWebView = findViewById(R.id.webview);
+
+        if (ContextCompat.checkSelfPermission(MainActivity.this,
+                Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Permission is not granted
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,
+                    Manifest.permission.CAMERA)) {
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{Manifest.permission.CAMERA},
+                        1);
+
+
+                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+
+            } else {
+                // No explanation needed; request the permission
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{Manifest.permission.CAMERA},
+                        1);
+
+                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+
+                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+            }
+        } else {
+            // Permission has already been granted
+            showWebView();
+        }
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case 1: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    showWebView();
+
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+
+                } else {
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
+
+    }
+
+    public class GeoWebChromeClient extends WebChromeClient {
+
+        private static final String TAG = "MyActivity";
+
+
+        @Override
+        public void onPermissionRequest(final PermissionRequest request) {
+            MainActivity.this.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    request.grant(request.getResources());
+                }
+            });
+        }
+
+
+        @Override
+        public void onGeolocationPermissionsShowPrompt(String origin,
+                                                       GeolocationPermissions.Callback callback) {
+
+            if ( ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
+
+                Log.i(TAG, "onGeolocationPermissionsShowPrompt()");
+                final boolean remember = false;
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle("Locations Permission");
+
+                builder.setMessage("Would like to use your current location")
+                        .setCancelable(true).setPositiveButton("Allow", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                callback.invoke(origin, true, remember);
+                            }
+                        }).setNegativeButton("Don't Allow", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                callback.invoke(origin, false, remember);
+                            }
+                        });
+
+                AlertDialog alert = builder.create();
+                alert.show();
+            }
+
+
+            // Always grant permission since the app itself requires location
+            // permission and the user has therefore already granted it
+            // callback.invoke(origin, true, false);
+        }
+
+
+
+    }
+
+    private void showWebView() {
+
+        mWebView.loadUrl("https://elearningsman1boyolangu.site/mobile/login");
+        mWebView.getSettings().setJavaScriptEnabled(true);
+        mWebView.getSettings().setDomStorageEnabled(true);
+//        mWebView.getSettings().setPluginState(WebSettings.PluginState.ON);
+        mWebView.getSettings().setMediaPlaybackRequiresUserGesture(false);
+        mWebView.getSettings().setLoadWithOverviewMode(true);
+
+        mWebView.getSettings().setAppCacheEnabled(true);
+        mWebView.getSettings().setDatabaseEnabled(true);
+
+        // geolocation
+        mWebView.getSettings().setGeolocationEnabled(true);
+        mWebView.setWebViewClient(new WebViewClient());
+
+
+        //Other webview settings
+        mWebView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
+        mWebView.setScrollbarFadingEnabled(false);
+        mWebView.getSettings().setBuiltInZoomControls(true);
+        mWebView.getSettings().setAllowFileAccess(true);
+        mWebView.getSettings().setSupportZoom(true);
+
+
+
+
+
+
+        // Brower niceties -- pinch / zoom, follow links in place
+        mWebView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
+        mWebView.getSettings().setBuiltInZoomControls(true);
+        mWebView.setWebViewClient(new GeoWebViewClient());
+
+        mWebView.setWebChromeClient(new GeoWebChromeClient());
+
+
+
+//        mWebView.setWebChromeClient(new WebChromeClient() {
+//
+//            @Override
+//            public void onPermissionRequest(final PermissionRequest request) {
+//                MainActivity.this.runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        request.grant(request.getResources());
+//                    }
+//                });
+//            }
+//        });
+
+    }
+}
